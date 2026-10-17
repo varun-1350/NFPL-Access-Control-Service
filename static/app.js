@@ -113,14 +113,8 @@ function updateBanner() {
 
     const roleBadge = document.getElementById("banner-user-role");
     roleBadge.textContent = currentUser.role;
-
-    const roleColors = {
-        "Admin": "rgba(239, 68, 68, 0.2)",
-        "Job_assigner": "rgba(16, 185, 129, 0.2)",
-        "auditor": "rgba(245, 158, 11, 0.2)",
-        "staff": "rgba(56, 189, 248, 0.2)"
-    };
-    roleBadge.style.background = roleColors[currentUser.role] || "rgba(56, 189, 248, 0.2)";
+    roleBadge.style.background = ""; // clear any inline background
+    roleBadge.className = `meta-badge badge-role badge-role-${currentUser.role.toLowerCase()}`;
 
     document.getElementById("banner-user-branch").textContent = currentUser.branch === "all" ? "all (Global)" : currentUser.branch;
 
@@ -129,10 +123,10 @@ function updateBanner() {
 
     if (currentUser.is_active) {
         statusBadge.className = "status-indicator";
-        statusText.textContent = "Active On Duty";
+        statusText.textContent = "Active";
     } else {
         statusBadge.className = "status-indicator status-absent";
-        statusText.textContent = "On Leave (Soft-Locks Dissolved)";
+        statusText.textContent = "On Leave";
     }
 }
 
