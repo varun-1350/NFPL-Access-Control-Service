@@ -17,8 +17,7 @@
          PAGE 1: LOGIN PAGE (User ID & Password only)
          ========================================================================= -->
     <div id="login-page" class="page-container active-page">
-        <div class="login-glow"></div>
-        <div class="login-card glass-panel">
+        <div class="login-card">
             <div class="brand-header">
                 <div class="brand-icon">🛡️</div>
                 <h1 class="brand-title">NAGARKOT ACCESS CONTROL</h1>
@@ -73,9 +72,6 @@
                 </div>
                 <div class="header-divider"></div>
                 <nav class="header-nav">
-                    <button class="nav-link-btn" onclick="openCompareModal()">
-                        <span>⚖️ Compare Access</span>
-                    </button>
                     <button class="nav-link-btn" onclick="openAuditModal()">
                         <span>📜 Audit Log</span>
                     </button>
@@ -241,7 +237,7 @@
             </section>
 
             <!-- Right Panel: Role Action Panel (35%) -->
-            <aside class="panel-card glass-panel actions-panel">
+            <aside class="panel-card actions-panel">
                 <div class="panel-header">
                     <div>
                         <h2 class="panel-title">Role Action Panel</h2>
@@ -262,7 +258,7 @@
 
     <!-- Modal 1: Audit Log Modal (with Filters & Auditor Sign-off bar) -->
     <div id="modal-audit" class="modal-overlay">
-        <div class="modal-card modal-lg glass-panel">
+        <div class="modal-card modal-lg">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">📜 System Audit Changes Log</h3>
@@ -314,7 +310,7 @@
 
     <!-- Modal 2: Employee Database Directory (with Search, Branch, Role, Status filters & Sorting) -->
     <div id="modal-employees" class="modal-overlay">
-        <div class="modal-card modal-lg glass-panel">
+        <div class="modal-card modal-lg">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">👥 Employee Database Table</h3>
@@ -384,7 +380,7 @@
 
     <!-- Modal 3: Jobs Dataset Explorer (with Branch, State, Mode, Direction, Search filters & Sorting) -->
     <div id="modal-jobs" class="modal-overlay">
-        <div class="modal-card modal-lg glass-panel">
+        <div class="modal-card modal-lg">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">📦 Jobs Dataset Table</h3>
@@ -467,7 +463,7 @@
 
     <!-- Modal 4: Assign Job Modal (Job_assigner - Cross-Branch Permitted) -->
     <div id="modal-assign" class="modal-overlay">
-        <div class="modal-card modal-md glass-panel">
+        <div class="modal-card modal-md">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">🎯 Assign Job to Staff</h3>
@@ -502,7 +498,7 @@
 
     <!-- Modal 5: Admin Sensitive Lifecycle Control (Cancel & Reopen Jobs) -->
     <div id="modal-admin-lifecycle" class="modal-overlay">
-        <div class="modal-card modal-md glass-panel" style="border-color: #EF4444;">
+        <div class="modal-card modal-md" style="border-color: #EF4444;">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title text-rose">⚙️ Admin Sensitive Operations</h3>
@@ -542,7 +538,7 @@
 
     <!-- Modal 6: Staff Access Management Portal (Admin / staff) -->
     <div id="modal-access" class="modal-overlay">
-        <div class="modal-card modal-md glass-panel">
+        <div class="modal-card modal-md">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">🔑 Manage Staff Access</h3>
@@ -583,7 +579,7 @@
 
     <!-- Modal 7: Policy Denial & SoD Alert Dialog -->
     <div id="modal-denial" class="modal-overlay">
-        <div class="modal-card modal-sm glass-panel" style="border-color: #EF4444;">
+        <div class="modal-card modal-sm" style="border-color: #EF4444;">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title text-rose">⚠️ Security Policy Violation</h3>
@@ -605,7 +601,7 @@
 
     <!-- Modal 8: Employee Profile Section -->
     <div id="modal-profile" class="modal-overlay">
-        <div class="modal-card modal-md glass-panel">
+        <div class="modal-card modal-md">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title">👤 Employee Profile</h3>
@@ -661,7 +657,7 @@
 
     <!-- Modal 9: Policy Comparison ("Why can she do this and he can't?") -->
     <div id="modal-compare" class="modal-overlay">
-        <div class="modal-card modal-lg glass-panel" style="max-width: 900px;">
+        <div class="modal-card modal-lg" style="max-width: 900px;">
             <div class="modal-header">
                 <div>
                     <h3 class="modal-title text-sky">⚖️ Access Comparison Engine</h3>

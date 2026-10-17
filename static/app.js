@@ -709,9 +709,17 @@ function filterEmployeeTable() {
     });
 }
 
-// Modal 3: Jobs Dataset Table (ID, Client, assigned_to, state, Mode, direction, branch)
-async function openJobsModal() {
+// Modal 3: Jobs Dataset Table (with Assignment Filter and Read-Only Flag)
+let isJobsModalReadOnly = false;
+
+async function openJobsModal(readOnly = false) {
+    isJobsModalReadOnly = Boolean(readOnly);
     const modal = document.getElementById("modal-jobs");
+    const title = document.querySelector("#modal-jobs .modal-title");
+    if (title) {
+        title.textContent = isJobsModalReadOnly ? "📦 Jobs Dataset (Read-Only Inspection)" : "📦 Jobs Dataset Table";
+    }
+
     modal.classList.add("active");
     loadJobsTable();
 }
@@ -725,8 +733,9 @@ async function loadJobsTable() {
         allJobsCache = await res.json();
 
         // If not Admin, default branch filter to their branch
-        if (currentUser.branch !== "all") {
-            document.getElementById("jobs-branch-filter").value = currentUser.branch;
+        if (currentUser.branch && currentUser.branch !== "all") {
+            const branchSel = document.getElementById("jobs-branch-filter");
+            if (branchSel) branchSel.value = currentUser.branch;
         }
 
         filterJobsTable();
@@ -738,10 +747,12 @@ async function loadJobsTable() {
 function filterJobsTable() {
     const tbody = document.getElementById("jobs-table-body");
     const search = (document.getElementById("jobs-search-input").value || "").toLowerCase().trim();
-    const branchFilter = document.getElementById("jobs-branch-filter").value;
+    const branchFilter = (document.getElementById("jobs-branch-filter").value || "all").toLowerCase();
     const stateFilter = document.getElementById("jobs-state-filter").value;
     const modeFilter = document.getElementById("jobs-mode-filter").value;
     const dirFilter = document.getElementById("jobs-dir-filter").value;
+    const assignFilterEl = document.getElementById("jobs-assign-filter");
+    const assignFilter = assignFilterEl ? assignFilterEl.value : "all";
     const sortBy = document.getElementById("jobs-sort-select").value;
 
     let filtered = [...allJobsCache];
@@ -753,98 +764,17 @@ function filterJobsTable() {
             (j.assigned_to && j.assigned_to.toLowerCase().includes(search))
         );
     }
-    if (branchFilter !== "all") {
-        filtered = filtered.filter(j => j.branch === branchFilter);
+    // Case-insensitive check: if not "all", filter by branch
+    if (branchFilter && branchFilter !== "all") {
+        filtered = filtered.filter(j => (j.branch || "").toLowerCase() === branchFilter);
     }
-    if (stateFilter !== "All") {
+    if (stateFilter && stateFilter !== "All") {
         filtered = filtered.filter(j => j.state === stateFilter);
     }
-    if (modeFilter !== "All") {
+    if (modeFilter && modeFilter !== "All") {
         filtered = filtered.filter(j => j.mode === modeFilter);
     }
-    if (dirFilter !== "All") {
-        filtered = filtered.filter(j => j.direction === dirFilter);
-    }
-
-    // Sort
-    if (sortBy === "id_asc") {
-        filtered.sort((a, b) => a.id - b.id);
-    } else if (sortBy === "client_asc") {
-        filtered.sort((a, b) => (a.client || "").localeCompare(b.client || ""));
-    } else if (sortBy === "state") {
-        filtered.sort((a, b) => (a.state || "").localeCompare(b.state || "") || b.id - a.id);
-    } else if (sortBy === "branch") {
-        filtered.sort((a, b) => (a.branch || "").localeCompare(b.branch || "") || b.id - a.id);
-    } else {
-        filtered.sort((a, b) => b.id - a.id);
-    }
-
-    document.getElementById("jobs-count-badge").textContent = `Showing ${filtered.length} of ${allJobsCache.length} jobs`;
-    tbody.innerHTML = "";
-
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No jobs match the selected filters.</td></tr>';
-        return;
-    }
-
-    filtered.forEach(j => {
-        const tr = document.createElement("tr");
-        const stageClass = `badge-stage-${j.state.toLowerCase()}`;
-        tr.innerHTML = `
-            <td><strong>#${j.id}</strong></td>
-            <td><strong>${j.client}</strong></td>
-            <td>${j.assigned_to ? `<code>${j.assigned_to}</code>` : '<span style="color: var(--text-muted);">Unassigned</span>'}</td>
-            <td><span class="badge-stage ${stageClass}">${j.state}</span></td>
-            <td><strong style="text-transform: uppercase;">${j.mode}</strong></td>
-            <td><span style="text-transform: capitalize;">${j.direction}</span></td>
-            <td><span class="meta-badge badge-branch">${j.branch}</span></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// Modal 3: Jobs Dataset Table (with Assignment Filter and Read-Only Flag)
-let isJobsModalReadOnly = false;
-
-async function openJobsModal(readOnly = false) {
-    isJobsModalReadOnly = Boolean(readOnly);
-    const modal = document.getElementById("modal-jobs");
-    const title = document.querySelector("#modal-jobs .modal-title");
-    title.textContent = isJobsModalReadOnly ? "📦 Jobs Dataset (Read-Only Inspection)" : "📦 Jobs Dataset Table";
-
-    modal.classList.add("active");
-    loadJobsTable();
-}
-
-function filterJobsTable() {
-    const tbody = document.getElementById("jobs-table-body");
-    const search = (document.getElementById("jobs-search-input").value || "").toLowerCase().trim();
-    const branchFilter = document.getElementById("jobs-branch-filter").value;
-    const stateFilter = document.getElementById("jobs-state-filter").value;
-    const modeFilter = document.getElementById("jobs-mode-filter").value;
-    const dirFilter = document.getElementById("jobs-dir-filter").value;
-    const assignFilter = document.getElementById("jobs-assign-filter").value;
-    const sortBy = document.getElementById("jobs-sort-select").value;
-
-    let filtered = [...allJobsCache];
-
-    if (search) {
-        filtered = filtered.filter(j =>
-            (j.client && j.client.toLowerCase().includes(search)) ||
-            String(j.id).includes(search) ||
-            (j.assigned_to && j.assigned_to.toLowerCase().includes(search))
-        );
-    }
-    if (branchFilter !== "All") {
-        filtered = filtered.filter(j => j.branch === branchFilter);
-    }
-    if (stateFilter !== "All") {
-        filtered = filtered.filter(j => j.state === stateFilter);
-    }
-    if (modeFilter !== "All") {
-        filtered = filtered.filter(j => j.mode === modeFilter);
-    }
-    if (dirFilter !== "All") {
+    if (dirFilter && dirFilter !== "All") {
         filtered = filtered.filter(j => j.direction === dirFilter);
     }
     if (assignFilter === "assigned") {
@@ -866,7 +796,8 @@ function filterJobsTable() {
         filtered.sort((a, b) => b.id - a.id);
     }
 
-    document.getElementById("jobs-count-badge").textContent = `Showing ${filtered.length} of ${allJobsCache.length} jobs`;
+    const badge = document.getElementById("jobs-count-badge");
+    if (badge) badge.textContent = `Showing ${filtered.length} of ${allJobsCache.length} jobs`;
     tbody.innerHTML = "";
 
     if (filtered.length === 0) {
