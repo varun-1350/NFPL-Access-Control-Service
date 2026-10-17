@@ -403,6 +403,15 @@ select::-ms-expand {
     margin-bottom: 1.75rem;
 }
 
+.brand-logo-img {
+    height: 44px;
+    width: auto;
+    max-width: 140px;
+    object-fit: contain;
+    margin: 0 auto 0.75rem auto;
+    display: block;
+}
+
 .brand-icon {
     font-size: 2rem;
     margin-bottom: 0.5rem;
@@ -514,8 +523,17 @@ select::-ms-expand {
 .header-brand {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
     text-decoration: none;
+}
+
+.header-logo-img {
+    height: 22px;
+    width: auto;
+    max-width: 80px;
+    object-fit: contain;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .brand-badge-icon {

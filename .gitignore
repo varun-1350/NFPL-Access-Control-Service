@@ -45,3 +45,7 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+# Brand Assets
+logo.png
+static/logo.png
