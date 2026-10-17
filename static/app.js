@@ -1321,33 +1321,32 @@ async function runComparison() {
 
         // Verdict banner
         const isOneAllowed = (data.user_a.allowed !== data.user_b.allowed);
-        banner.style.background = isOneAllowed ? "rgba(14, 165, 233, 0.15)" : "rgba(30, 41, 59, 0.7)";
-        banner.style.color = isOneAllowed ? "#38BDF8" : "#E2E8F0";
+        banner.className = isOneAllowed ? "compare-verdict-banner verdict-split" : "compare-verdict-banner verdict-same";
         banner.innerHTML = `📌 <strong>Core Decision Verdict:</strong> ${data.summary}`;
 
         function renderUserCard(u) {
             const statusBadge = u.allowed
-                ? `<span style="background: rgba(16, 185, 129, 0.2); color: #34D399; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.8rem;">✓ ALLOWED</span>`
-                : `<span style="background: rgba(239, 68, 68, 0.2); color: #F87171; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.8rem;">✕ DENIED</span>`;
+                ? `<span class="badge-neon badge-neon-allowed">✓ ALLOWED</span>`
+                : `<span class="badge-neon badge-neon-denied">✕ DENIED</span>`;
 
             const checksList = u.checks.map(c => `
-                <li style="display: flex; gap: 8px; margin-bottom: 6px; font-size: 0.85rem; color: ${c.ok ? '#94A3B8' : '#FCA5A5'};">
-                    <span>${c.ok ? '✓' : '✗'}</span>
-                    <strong>${c.check}:</strong>
-                    <span>${c.detail}</span>
+                <li class="compare-check-item ${c.ok ? 'check-pass' : 'check-fail'}">
+                    <span class="check-icon">${c.ok ? '✓' : '✗'}</span>
+                    <strong class="check-name">${c.check}:</strong>
+                    <span class="check-detail">${c.detail}</span>
                 </li>
             `).join("");
 
             return `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div class="compare-card-header">
                     <div>
-                        <h4 style="margin: 0; font-size: 1.05rem; font-weight: 600;">${u.name}</h4>
-                        <span style="font-size: 0.8rem; color: #94A3B8;">${u.id} | ${u.role} | Branch: ${u.branch} | Duty: ${u.is_active ? 'Active' : 'On Leave'}</span>
+                        <h4 class="compare-user-name">${u.name}</h4>
+                        <span class="compare-user-sub">${u.id} | ${u.role} | Branch: ${u.branch} | Duty: ${u.is_active ? 'Active' : 'On Leave'}</span>
                     </div>
                     ${statusBadge}
                 </div>
-                <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.5rem;">
-                    <ul style="list-style: none; padding: 0; margin: 0;">
+                <div class="compare-card-body">
+                    <ul class="compare-checks-list">
                         ${checksList}
                     </ul>
                 </div>
@@ -1360,16 +1359,16 @@ async function runComparison() {
         // Differences Breakdown
         if (data.differences && data.differences.length > 0) {
             diffSec.innerHTML = `
-                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 1rem;">
-                    <h5 style="margin: 0 0 0.5rem 0; color: #FBBF24; font-size: 0.95rem;">⚡ Key Decision Differentiators:</h5>
-                    <ul style="margin: 0; padding-left: 1.25rem; color: #E2E8F0; font-size: 0.88rem;">
-                        ${data.differences.map(d => `<li style="margin-bottom: 4px;">${d.summary}</li>`).join("")}
+                <div class="compare-diff-box">
+                    <h5 class="compare-diff-title">⚡ Key Decision Differentiators:</h5>
+                    <ul class="compare-diff-list">
+                        ${data.differences.map(d => `<li>${d.summary}</li>`).join("")}
                     </ul>
                 </div>
             `;
         } else {
             diffSec.innerHTML = `
-                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.75rem; text-align: center; color: #94A3B8; font-size: 0.85rem;">
+                <div class="compare-diff-empty">
                     Identical permission outcome: both evaluated to ${data.user_a.allowed ? 'ALLOWED' : 'DENIED'} across all security checks.
                 </div>
             `;

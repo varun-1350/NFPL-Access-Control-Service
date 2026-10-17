@@ -640,16 +640,16 @@
                 <button class="modal-close" onclick="closeModal('modal-compare')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="compare-controls-bar" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-                    <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
+                <div class="compare-controls-bar">
+                    <div class="form-group compare-user-input">
                         <label class="form-label">Person A (e.g. Rahul / Admin)</label>
                         <select id="compare-user-a" class="form-control form-select"></select>
                     </div>
-                    <div class="form-group" style="flex: 1; min-width: 180px; margin-bottom: 0;">
+                    <div class="form-group compare-user-input">
                         <label class="form-label">Person B (e.g. Priya / Absent)</label>
                         <select id="compare-user-b" class="form-control form-select"></select>
                     </div>
-                    <div class="form-group" style="width: 130px; margin-bottom: 0;">
+                    <div class="form-group compare-action-input">
                         <label class="form-label">Action</label>
                         <select id="compare-action" class="form-control form-select">
                             <option value="check" selected>check</option>
@@ -660,24 +660,24 @@
                             <option value="assign">assign</option>
                         </select>
                     </div>
-                    <div class="form-group" style="width: 90px; margin-bottom: 0;">
+                    <div class="form-group compare-id-input">
                         <label class="form-label">Job ID</label>
                         <input type="number" id="compare-job-id" class="form-control" value="1" min="1">
                     </div>
-                    <div style="margin-bottom: 0;">
+                    <div class="compare-btn-wrapper">
                         <button class="btn btn-primary" onclick="runComparison()">
                             <span>🔍 Compare</span>
                         </button>
                     </div>
                 </div>
 
-                <div id="compare-result-container" style="margin-top: 1.5rem; display: none;">
-                    <div id="compare-verdict-banner" style="padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-weight: 600; font-size: 0.95rem; border: 1px solid rgba(255,255,255,0.1);"></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div id="compare-col-a" style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);"></div>
-                        <div id="compare-col-b" style="background: rgba(15, 23, 42, 0.5); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);"></div>
+                <div id="compare-result-container" class="compare-result-container">
+                    <div id="compare-verdict-banner" class="compare-verdict-banner"></div>
+                    <div class="compare-grid">
+                        <div id="compare-col-a" class="compare-col"></div>
+                        <div id="compare-col-b" class="compare-col"></div>
                     </div>
-                    <div id="compare-diff-section" style="margin-top: 1.25rem;"></div>
+                    <div id="compare-diff-section" class="compare-diff-section"></div>
                 </div>
             </div>
             <div class="modal-footer">
