@@ -333,20 +333,30 @@ code, kbd, samp, pre {
     padding: 0 0.75rem;
 }
 
-.form-select {
+select, .form-select, .form-select-sm {
     cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
-    padding-right: 2.25rem;
     background-color: var(--white);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748B' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
-    background-position: right 0.5rem center;
+    background-position: right 0.55rem center;
     background-repeat: no-repeat;
-    background-size: 1.25em 1.25em;
+    background-size: 1.15em 1.15em;
+    padding-right: 2rem !important;
+    border-radius: var(--radius-sm);
+    background-clip: padding-box;
+}
+
+select::-ms-expand {
+    display: none;
 }
 
 .form-select-sm {
     height: 34px;
-    padding-right: 2rem;
+    padding-right: 1.85rem !important;
+    background-size: 1.05em 1.05em;
+    background-position: right 0.45rem center;
 }
 
 .select-wrapper {
