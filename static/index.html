@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nagarkot Access Control Platform - NFPL</title>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- =========================================================================
+         PAGE 1: LOGIN PAGE (User ID & Password only)
+         ========================================================================= -->
+    <div id="login-page" class="page-container active-page">
+        <div class="login-glow"></div>
+        <div class="login-card glass-panel">
+            <div class="brand-header">
+                <div class="brand-icon">🛡️</div>
+                <h1 class="brand-title">NAGARKOT ACCESS CONTROL</h1>
+                <p class="brand-subtitle">Enterprise Logistics Security Gateway (b1 - b5)</p>
+            </div>
+
+            <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); handleLogin();">
+                <div class="form-group">
+                    <label for="login-user-select" class="form-label">User ID</label>
+                    <div class="select-wrapper">
+                        <select id="login-user-select" class="form-control form-select">
+                            <option value="">Loading employee accounts...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="•••••••• (Bypassed for Demo Evaluation)" autocomplete="off">
+                    <span class="form-hint">ℹ️ Test Mode: Password validation bypassed for rapid evaluation.</span>
+                </div>
+
+                <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block">
+                    <span>Log In to Dashboard</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+
+            <div class="quick-demo-section">
+                <span class="quick-demo-label">Quick Demo Profiles:</span>
+                <div class="quick-demo-chips">
+                    <button class="chip chip-admin" onclick="quickSelectUser('admin1')">Admin (Global)</button>
+                    <button class="chip chip-assigner" onclick="quickSelectUser('u_job_assigner')">Job_assigner (b1)</button>
+                    <button class="chip chip-auditor" onclick="quickSelectUser('u_auditor')">auditor (b1)</button>
+                    <button class="chip chip-staff" onclick="quickSelectUser('u_staff_1')">staff (b1)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         PAGE 2: DASHBOARD PAGE
+         ========================================================================= -->
+    <div id="dashboard-page" class="page-container">
+        <!-- Top Banner -->
+        <header class="top-banner glass-panel">
+            <div class="banner-left">
+                <div class="banner-brand">
+                    <span class="brand-mini-icon">🛡️</span>
+                    <span class="brand-name">NFPL ACCESS CONTROL</span>
+                </div>
+                <div class="banner-divider"></div>
+                <div class="user-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">EMPLOYEE</span>
+                        <span id="banner-user-name" class="meta-value text-sky">Loading...</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">ROLE</span>
+                        <span id="banner-user-role" class="meta-badge badge-role">Role</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">BRANCH</span>
+                        <span id="banner-user-branch" class="meta-badge badge-branch">Branch</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">STATUS</span>
+                        <span id="banner-user-status" class="status-indicator">
+                            <span class="status-dot"></span>
+                            <span id="banner-status-text">Active</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="banner-right">
+                <button id="btn-banner-profile" class="btn btn-secondary" onclick="openProfileModal()">
+                    <span>👤 My Profile</span>
+                </button>
+                <button id="btn-banner-audit" class="btn btn-warning" onclick="openAuditModal()">
+                    <span>📜 Audit Changes Log</span>
+                </button>
+                <button id="btn-banner-logout" class="btn btn-danger" onclick="handleLogout()">
+                    <span>🚪 Log Out</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Grid -->
+        <main class="dashboard-grid">
+            <!-- Left Panel: Task Queue & Shipment Box (65%) -->
+            <section class="panel-card glass-panel task-panel">
+                <div class="panel-header">
+                    <div class="panel-header-left">
+                        <h2 id="queue-main-title" class="panel-title">Shipment Tasks & Branch Queue</h2>
+                        <span id="queue-subtitle" class="panel-subtitle">Confirmed → Prepared → Checked → Filed</span>
+                    </div>
+                    <div class="panel-header-right">
+                        <button class="btn btn-secondary btn-sm" onclick="loadQueue()">
+                            <span>🔄 Refresh</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Strip -->
+                <div class="metrics-bar">
+                    <div class="metric-item">
+                        <span class="metric-num" id="metric-total">0</span>
+                        <span class="metric-name">Actionable Tasks</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-num text-sky" id="metric-prepare">0</span>
+                        <span class="metric-name">Prepare Stage</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-num text-amber" id="metric-check">0</span>
+                        <span class="metric-name">Check Stage</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-num text-emerald" id="metric-file">0</span>
+                        <span class="metric-name">File Stage</span>
+                    </div>
+                </div>
+
+                <!-- Queue Filter & Sort Toolbar (for Staff, Assigner, Admin) -->
+                <div id="standard-filter-toolbar" class="filter-toolbar">
+                    <div class="filter-input-wrapper">
+                        <input type="text" id="queue-search-input" class="form-control form-control-sm" placeholder="🔍 Search Job ID or Client..." oninput="filterQueue()">
+                    </div>
+                    <div class="filter-select-group">
+                        <select id="queue-state-filter" class="form-control form-control-sm form-select-sm" onchange="filterQueue()">
+                            <option value="All">All States</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Prepared">Prepared</option>
+                            <option value="Checked">Checked</option>
+                            <option value="Reopened">Reopened</option>
+                        </select>
+                        <select id="queue-mode-filter" class="form-control form-control-sm form-select-sm" onchange="filterQueue()">
+                            <option value="All">All Modes</option>
+                            <option value="air">Air</option>
+                            <option value="land">Land</option>
+                            <option value="sea">Sea</option>
+                        </select>
+                        <select id="queue-assignment-filter" class="form-control form-control-sm form-select-sm" onchange="filterQueue()">
+                            <option value="all">All Jobs</option>
+                            <option value="assigned">Only Assigned</option>
+                            <option value="unassigned">Only Unassigned</option>
+                        </select>
+                        <select id="queue-sort-select" class="form-control form-control-sm form-select-sm" onchange="filterQueue()">
+                            <option value="id_desc">Sort: ID (Newest)</option>
+                            <option value="id_asc">Sort: ID (Oldest)</option>
+                            <option value="client_asc">Sort: Client (A-Z)</option>
+                            <option value="state">Sort: State</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Auditor Stream Filter Toolbar (Auditor Primary Mode) -->
+                <div id="auditor-stream-toolbar" class="filter-toolbar" style="display: none;">
+                    <div class="filter-input-wrapper">
+                        <input type="text" id="auditor-stream-search" class="form-control form-control-sm" placeholder="🔍 Search Actor, Operation, Target..." oninput="filterAuditorStream()">
+                    </div>
+                    <div class="filter-select-group">
+                        <select id="auditor-stream-decision" class="form-control form-control-sm form-select-sm" onchange="filterAuditorStream()">
+                            <option value="All">All Decisions</option>
+                            <option value="ALLOWED">ALLOWED Only</option>
+                            <option value="DENIED">DENIED Only</option>
+                        </select>
+                        <select id="auditor-stream-status" class="form-control form-control-sm form-select-sm" onchange="filterAuditorStream()">
+                            <option value="All">All Review Status</option>
+                            <option value="Pending">Pending Review</option>
+                            <option value="Verified">Verified Only</option>
+                            <option value="Flagged">Flagged Only</option>
+                            <option value="Rejected">Rejected Only</option>
+                        </select>
+                        <select id="auditor-stream-sort" class="form-control form-control-sm form-select-sm" onchange="filterAuditorStream()">
+                            <option value="newest">Sort: Newest First</option>
+                            <option value="oldest">Sort: Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Scrollable Tasks List -->
+                <div id="tasks-container" class="tasks-scroll-container">
+                    <div class="loading-spinner">Loading shipment tasks...</div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Role Action Panel (35%) -->
+            <aside class="panel-card glass-panel actions-panel">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title">Role Action Panel</h2>
+                        <span id="action-panel-role-scope" class="panel-subtitle">Privilege Scope: Evaluator</span>
+                    </div>
+                </div>
+
+                <div id="role-controls-container" class="role-controls-content">
+                    <!-- Injected dynamically based on role -->
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- =========================================================================
+         MODALS WITH FILTERS & SORTING
+         ========================================================================= -->
+
+    <!-- Modal 1: Audit Log Modal (with Filters & Auditor Sign-off bar) -->
+    <div id="modal-audit" class="modal-overlay">
+        <div class="modal-card modal-lg glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">📜 System Audit Changes Log</h3>
+                    <p id="audit-modal-subtitle" class="modal-subtitle">Forensic record of transitions, security checks, and verification sign-offs</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-audit')">&times;</button>
+            </div>
+
+            <!-- Auditor Check & Verify Bar -->
+            <div id="auditor-verify-bar" class="auditor-verify-bar">
+                <span class="auditor-bar-label">Auditor Sign-Off:</span>
+                <input type="number" id="verify-audit-id" class="form-control form-control-sm" placeholder="Entry ID" style="width: 90px;">
+                <input type="text" id="verify-audit-notes" class="form-control form-control-sm" placeholder="Verification Remarks (e.g. Audit verified & signed)" style="flex: 1;">
+                <button class="btn btn-warning btn-sm" onclick="submitAuditVerification()">
+                    <span>✓ Check & Verify</span>
+                </button>
+            </div>
+
+            <!-- Audit Filter Toolbar -->
+            <div class="filter-toolbar modal-filter-toolbar">
+                <input type="text" id="audit-search-input" class="form-control form-control-sm" placeholder="🔍 Search Actor, Operation, Target..." oninput="filterAuditLogs()">
+                <select id="audit-decision-filter" class="form-control form-control-sm form-select-sm" onchange="filterAuditLogs()">
+                    <option value="All">All Decisions</option>
+                    <option value="ALLOWED">ALLOWED Only</option>
+                    <option value="DENIED">DENIED Only</option>
+                </select>
+                <select id="audit-verify-filter" class="form-control form-control-sm form-select-sm" onchange="filterAuditLogs()">
+                    <option value="All">All Verification</option>
+                    <option value="Verified">Verified Only</option>
+                    <option value="Pending">Pending Sign-off</option>
+                </select>
+                <select id="audit-sort-select" class="form-control form-control-sm form-select-sm" onchange="filterAuditLogs()">
+                    <option value="newest">Sort: Newest First</option>
+                    <option value="oldest">Sort: Oldest First</option>
+                </select>
+            </div>
+
+            <div class="modal-body">
+                <div id="audit-log-list" class="audit-list-container">
+                    <!-- Injected rows -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="audit-count-badge" class="modal-count-badge">0 entries</span>
+                <button class="btn btn-secondary" onclick="closeModal('modal-audit')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Employee Database Directory (with Search, Branch, Role, Status filters & Sorting) -->
+    <div id="modal-employees" class="modal-overlay">
+        <div class="modal-card modal-lg glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">👥 Employee Database Table</h3>
+                    <p class="modal-subtitle">Attributes: name, id, Role, Branch, Job queue, is_active</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-employees')">&times;</button>
+            </div>
+
+            <!-- Employee Filter Toolbar -->
+            <div class="filter-toolbar modal-filter-toolbar">
+                <input type="text" id="emp-search-input" class="form-control form-control-sm" placeholder="🔍 Search Employee Name or ID..." oninput="filterEmployeeTable()">
+                <select id="emp-role-filter" class="form-control form-control-sm form-select-sm" onchange="filterEmployeeTable()">
+                    <option value="All">All Roles</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Job_assigner">Job_assigner</option>
+                    <option value="auditor">auditor</option>
+                    <option value="staff">staff</option>
+                </select>
+                <select id="emp-branch-filter" class="form-control form-control-sm form-select-sm" onchange="filterEmployeeTable()">
+                    <option value="All">All Branches</option>
+                    <option value="all">Global (all)</option>
+                    <option value="b1">b1</option>
+                    <option value="b2">b2</option>
+                    <option value="b3">b3</option>
+                    <option value="b4">b4</option>
+                    <option value="b5">b5</option>
+                </select>
+                <select id="emp-status-filter" class="form-control form-control-sm form-select-sm" onchange="filterEmployeeTable()">
+                    <option value="All">All Statuses</option>
+                    <option value="Active">Active On Duty</option>
+                    <option value="On Leave">On Leave</option>
+                </select>
+                <select id="emp-sort-select" class="form-control form-control-sm form-select-sm" onchange="filterEmployeeTable()">
+                    <option value="name_asc">Sort: Name (A-Z)</option>
+                    <option value="name_desc">Sort: Name (Z-A)</option>
+                    <option value="id_asc">Sort: ID (A-Z)</option>
+                    <option value="role">Sort: Role</option>
+                    <option value="branch">Sort: Branch</option>
+                </select>
+            </div>
+
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>ID</th>
+                                <th>Role</th>
+                                <th>Branch</th>
+                                <th>Job Queue</th>
+                                <th>Active Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employee-table-body">
+                            <!-- Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="emp-count-badge" class="modal-count-badge">0 employees</span>
+                <button class="btn btn-secondary" onclick="closeModal('modal-employees')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Jobs Dataset Explorer (with Branch, State, Mode, Direction, Search filters & Sorting) -->
+    <div id="modal-jobs" class="modal-overlay">
+        <div class="modal-card modal-lg glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">📦 Jobs Dataset Table</h3>
+                    <p id="jobs-modal-scope" class="modal-subtitle">Attributes: ID, Client, assigned_to, state, Mode (air, land, sea), direction (import/export), branch</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-jobs')">&times;</button>
+            </div>
+
+            <!-- Jobs Filter Toolbar -->
+            <div class="filter-toolbar modal-filter-toolbar">
+                <input type="text" id="jobs-search-input" class="form-control form-control-sm" placeholder="🔍 Search Client, ID, Assignee..." oninput="filterJobsTable()">
+                <select id="jobs-branch-filter" class="form-control form-control-sm form-select-sm" onchange="filterJobsTable()">
+                    <option value="all">All Branches</option>
+                    <option value="b1">Branch b1</option>
+                    <option value="b2">Branch b2</option>
+                    <option value="b3">Branch b3</option>
+                    <option value="b4">Branch b4</option>
+                    <option value="b5">Branch b5</option>
+                </select>
+                <select id="jobs-state-filter" class="form-control form-control-sm form-select-sm" onchange="filterJobsTable()">
+                    <option value="All">All States</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Prepared">Prepared</option>
+                    <option value="Checked">Checked</option>
+                    <option value="Filed">Filed</option>
+                    <option value="Cancelled">Cancelled</option>
+                    <option value="Reopened">Reopened</option>
+                </select>
+                <select id="jobs-mode-filter" class="form-control form-control-sm form-select-sm" onchange="filterJobsTable()">
+                    <option value="All">All Modes</option>
+                    <option value="air">Air</option>
+                    <option value="land">Land</option>
+                    <option value="sea">Sea</option>
+                </select>
+                <select id="jobs-dir-filter" class="form-control form-control-sm form-select-sm" onchange="filterJobsTable()">
+                    <option value="All">All Directions</option>
+                    <option value="import">Import</option>
+                    <option value="export">Export</option>
+                </select>
+                <select id="jobs-assign-filter" class="form-control form-control-sm form-select-sm" onchange="filterJobsTable()">
+                    <option value="all">All Assignment</option>
+                    <option value="assigned">Only Assigned</option>
+                    <option value="unassigned">Only Unassigned</option>
+                </select>
+                <select id="jobs-sort-select" class="form-control form-control-sm form-select-sm" onchange="filterJobsTable()">
+                    <option value="id_desc">Sort: ID (Newest)</option>
+                    <option value="id_asc">Sort: ID (Oldest)</option>
+                    <option value="client_asc">Sort: Client (A-Z)</option>
+                    <option value="state">Sort: State</option>
+                    <option value="branch">Sort: Branch</option>
+                </select>
+            </div>
+
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Client</th>
+                                <th>Assigned To</th>
+                                <th>State</th>
+                                <th>Mode</th>
+                                <th>Direction</th>
+                                <th>Branch</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobs-table-body">
+                            <!-- Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="jobs-count-badge" class="modal-count-badge">0 jobs</span>
+                <button class="btn btn-secondary" onclick="closeModal('modal-jobs')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Assign Job Modal (Job_assigner - Cross-Branch Permitted) -->
+    <div id="modal-assign" class="modal-overlay">
+        <div class="modal-card modal-md glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">🎯 Assign Job to Staff</h3>
+                    <p id="assign-modal-subtitle" class="modal-subtitle text-emerald">Cross-Branch Delegation Permitted</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-assign')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Job in Branch</label>
+                    <div class="select-wrapper">
+                        <select id="assign-job-select" class="form-control form-select">
+                            <!-- Injected -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="assign-staff-label">Assignee (Strictly Branch Staff)</label>
+                    <div class="select-wrapper">
+                        <select id="assign-staff-select" class="form-control form-select">
+                            <!-- Injected -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-assign')">Cancel</button>
+                <button class="btn btn-success" onclick="submitJobAssignment()">Confirm Branch Assignment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Admin Sensitive Lifecycle Control (Cancel & Reopen Jobs) -->
+    <div id="modal-admin-lifecycle" class="modal-overlay">
+        <div class="modal-card modal-md glass-panel" style="border-color: #EF4444;">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title text-rose">⚙️ Admin Sensitive Operations</h3>
+                    <p class="modal-subtitle">Cancel active shipment or Reopen completed/cancelled job</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-admin-lifecycle')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Action</label>
+                    <div class="select-wrapper">
+                        <select id="lifecycle-action-select" class="form-control form-select" onchange="updateLifecycleJobsList()">
+                            <option value="cancel">Cancel Active Job (Confirmed/Prepared/Checked)</option>
+                            <option value="reopen">Reopen Job (Filed/Cancelled)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Job</label>
+                    <div class="select-wrapper">
+                        <select id="lifecycle-job-select" class="form-control form-select">
+                            <!-- Injected -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason / Justification (Mandatory)</label>
+                    <input type="text" id="lifecycle-reason" class="form-control" placeholder="Reason for cancellation or reopen">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-admin-lifecycle')">Cancel</button>
+                <button class="btn btn-danger" onclick="submitAdminLifecycleAction()">Execute Action</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Staff Access Management Portal (Admin / staff) -->
+    <div id="modal-access" class="modal-overlay">
+        <div class="modal-card modal-md glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">🔑 Manage Staff Access</h3>
+                    <p class="modal-subtitle">Update employee roles and branch scope</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-access')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Select Employee</label>
+                    <select id="access-emp-select" class="form-control form-select"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <select id="access-role-select" class="form-control form-select">
+                        <option value="staff">staff</option>
+                        <option value="Job_assigner">Job_assigner</option>
+                        <option value="auditor">auditor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Branch</label>
+                    <select id="access-branch-select" class="form-control form-select">
+                        <option value="b1">b1</option>
+                        <option value="b2">b2</option>
+                        <option value="b3">b3</option>
+                        <option value="b4">b4</option>
+                        <option value="b5">b5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-access')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitRoleUpdate()">Update Access</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 7: Policy Denial & SoD Alert Dialog -->
+    <div id="modal-denial" class="modal-overlay">
+        <div class="modal-card modal-sm glass-panel" style="border-color: #EF4444;">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title text-rose">⚠️ Security Policy Violation</h3>
+                    <p class="modal-subtitle">ABAC / RBAC Engine Decision Block</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-denial')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="denial-alert-box">
+                    <p id="denial-summary" class="denial-summary-text"></p>
+                    <pre id="denial-explanation" class="denial-detail-text"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-denial')">Acknowledge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 8: Employee Profile Section -->
+    <div id="modal-profile" class="modal-overlay">
+        <div class="modal-card modal-md glass-panel">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">👤 Employee Profile</h3>
+                    <p class="modal-subtitle">Security clearance & operational context</p>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-profile')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-card">
+                    <div class="profile-header-strip">
+                        <div class="profile-avatar" id="prof-avatar">🛡️</div>
+                        <div class="profile-info-block">
+                            <h4 id="prof-name" class="profile-name">Employee Name</h4>
+                            <span id="prof-id" class="profile-id">ID: user</span>
+                        </div>
+                    </div>
+                    <div class="profile-details-grid">
+                        <div class="profile-grid-item">
+                            <span class="prof-label">System Role</span>
+                            <span id="prof-role" class="meta-badge badge-role">staff</span>
+                        </div>
+                        <div class="profile-grid-item">
+                            <span class="prof-label">Assigned Branch</span>
+                            <span id="prof-branch" class="meta-badge badge-branch">b1</span>
+                        </div>
+                        <div class="profile-grid-item">
+                            <span class="prof-label">Duty Status</span>
+                            <span id="prof-status" class="status-indicator">Active</span>
+                        </div>
+                        <div class="profile-grid-item">
+                            <span class="prof-label">Active Job Queue</span>
+                            <span id="prof-queue-count" class="text-sky" style="font-weight: 700;">0 jobs</span>
+                        </div>
+                    </div>
+                    <div class="profile-section-divider"></div>
+                    <div class="prof-subheading">Assigned Job IDs:</div>
+                    <div id="prof-queue-list" class="prof-queue-chips">
+                        <span class="chip-empty">No active jobs assigned</span>
+                    </div>
+                    <div class="profile-section-divider"></div>
+                    <div id="prof-staff-actions" style="margin-top: 1rem; display: none;">
+                        <button id="prof-leave-btn" class="btn btn-warning btn-block" onclick="toggleLeaveFromProfile()">
+                            <span>🏖️ Apply for Absent Leave</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modal-profile')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
