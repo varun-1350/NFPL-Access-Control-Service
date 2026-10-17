@@ -3,23 +3,30 @@
 
 ---
 
-### 1. Architectural Overview & Context
+### 1. Architectural Overview & Operational Context
 
-Nagarkot Forwarders Pvt. Ltd. (NFPL) operates a customs brokerage spanning approximately **120 staff across 5 physical branches** (`b1` Mumbai, `b2` Delhi, `b3` Bengaluru, `b4` Chennai, `b5` Kolkata). Every shipment handled by the company constitutes a **job** characterized by:
-- **Client**: Corporate customer entity (e.g., ACME Corp, Globex, Initech).
+Nagarkot Forwarders Pvt. Ltd. (NFPL) operates a customs brokerage spanning approximately **120 staff across 5 physical branches**:
+- `b1`: Mumbai
+- `b2`: Delhi
+- `b3`: Bengaluru
+- `b4`: Chennai
+- `b5`: Kolkata
+
+Every shipment handled by the company constitutes a **job** characterized by:
+- **Client**: Corporate customer entity (e.g., ACME Corp, Globex, Initech, Umbrella Corp, Stark Freight).
 - **Branch**: Geographic customs clearance office (`b1`..`b5`).
 - **Direction**: Trade flow (`import` or `export`).
 - **Mode**: Transport modality (`air`, `land`, `sea`).
-- **State Lifecycle**: Standard linear progression:
+- **State Lifecycle**: Standard linear operational progression:
   $$\text{Confirmed} \xrightarrow[\text{staff/Admin}]{\text{prepare}} \text{Prepared} \xrightarrow[\text{staff/Admin}]{\text{check (Maker-Checker SoD)}} \text{Checked} \xrightarrow[\text{staff/Admin}]{\text{file}} \text{Filed}$$
-  Alongside sensitive exceptions:
+  Alongside sensitive administrative lifecycle overrides:
   $$\text{Cancelled} \quad \text{and} \quad \text{Reopened (Admin Exclusively Authorized)}$$
 
-Following a critical security breach where a filed customs shipment was improperly altered without an auditable trail of authorization, this access control service was designed to provide **strict policy enforcement where it matters** while remaining **intuitive and responsive for daily operations**.
+Following a critical operational security breach where a filed customs declaration was improperly altered without an auditable trail of authorization, this access control service was designed to provide **strict policy enforcement where it matters** while remaining **intuitive and responsive for daily operations**.
 
 ---
 
-### 2. Core Security Model & Database Specification
+### 2. Security Decision Pipeline & Schema Specification
 
 The platform combines **Role-Based Access Control (RBAC)** with **Attribute-Based Contextual Constraints (ABAC)** implemented in Python 3 and SQLite (WAL mode).
 
@@ -42,7 +49,7 @@ The platform combines **Role-Based Access Control (RBAC)** with **Attribute-Base
                                      v
                         +---------------------------+
                         |  3. Role Permission Gate  | ---> Unauthorized role? DENY
-                        +-------------+-------------+
+                        +-------------+-------------+      (Admin exclusive for cancel/reopen)
                                      | Passed
                                      v
                         +---------------------------+
@@ -61,7 +68,7 @@ The platform combines **Role-Based Access Control (RBAC)** with **Attribute-Base
                         +---------------------------+
 ```
 
-#### A. Data Model (`SCHEMA`)
+#### A. Database Schema (`SCHEMA`)
 
 ```sql
 -- Physical Clearance Offices
@@ -122,7 +129,7 @@ CREATE TABLE audit (
     verification_status TEXT DEFAULT 'pending'
 );
 
--- High-Performance Secondary Indexes
+-- High-Performance Composite Secondary Indexes
 CREATE INDEX idx_jobs_branch_state ON jobs(branch, state);
 CREATE INDEX idx_jobs_assigned ON jobs(assigned_to);
 CREATE INDEX idx_job_events_job ON job_events(job_id);
@@ -133,8 +140,8 @@ CREATE INDEX idx_audit_actor_ts ON audit(actor, ts);
 
 ### 3. Key Design Decisions & Architectural Trade-offs
 
-1. **Branch-Based Operational Isolation over Complex Grant Combinations**:
-   - *Decision*: In a real-world customs brokerage, operational accountability is anchored to physical customs zones (branches). Staff operate within their authorized branch port. Job Assigners coordinate shipment allocation across branches, while Admins hold global oversight.
+1. **Branch-Based Operational Isolation over Combinatorial Permissions**:
+   - *Decision*: In a customs brokerage, accountability is anchored to physical customs offices (branches). Staff operate within their authorized branch port. Job Assigners coordinate shipment allocation across branches, while Admins hold global oversight.
    - *Trade-off*: Eliminates the combinatorial complexity, deadlocks, and stale grant caches associated with micro-scoped ABAC matrices, while delivering strict segregation of duties where regulatory failure occurs.
 
 2. **Live Decision Evaluation (No Permission Caching)**:
@@ -156,10 +163,10 @@ CREATE INDEX idx_audit_actor_ts ON audit(actor, ts);
 
 ---
 
-### 4. Answers to the 14 Assessment Questions
+### 4. Comprehensive Answers to the 14 Assessment Questions
 
 #### Q1. Should everyone see everything? If not, who sees what? How does that differ from who may act?
-- **Visibility vs Action**: Seeing and acting are separated.
+- **Visibility vs Action**: Seeing and acting are fundamentally decoupled.
 - **Who Sees What**:
   - `staff`: Sees actionable shipments belonging to their designated branch (`b1`..`b5`), along with read-only visibility into their branch dataset.
   - `Job_assigner`: Sees jobs across all branches to coordinate balancing and routing.
