@@ -23,12 +23,16 @@ wheels/
 .installed.cfg
 *.egg
 
-# SQLite Databases (generated at runtime)
+# SQLite Databases (generated at runtime outside data/)
 *.db
 *.db-wal
 *.db-shm
 *.sqlite
 *.sqlite3
+
+# Explicitly track data directory and data files
+!data/
+!data/**
 
 # Assignment Brief & Local Documents
 NFPL_Access_Control_Assignment.pdf

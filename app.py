@@ -13,6 +13,7 @@ Features:
   * Employee Database Directory
   * Audit Changes Log
 """
+import os
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter as ctk
@@ -21,6 +22,8 @@ from engine import AccessEngine, Denied, Refused
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
+
+DB_PATH = os.path.join("data", "nfpl_demo.db")
 
 
 class NagarkotApp(ctk.CTk):
@@ -33,9 +36,12 @@ class NagarkotApp(ctk.CTk):
 
         # Initialize Decision Engine
         try:
-            self.engine = AccessEngine("nfpl_demo.db")
+            if not os.path.exists(DB_PATH):
+                from seed_demo import seed_demo
+                seed_demo(DB_PATH)
+            self.engine = AccessEngine(DB_PATH)
         except Exception as e:
-            messagebox.showerror("Database Error", f"Unable to open 'nfpl_demo.db': {e}\nPlease run 'python seed_demo.py' first.")
+            messagebox.showerror("Database Error", f"Unable to open '{DB_PATH}': {e}\nPlease run 'python seed_demo.py' first.")
             self.destroy()
             return
 

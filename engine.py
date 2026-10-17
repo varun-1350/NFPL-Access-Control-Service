@@ -8,6 +8,7 @@ Schema & Workflow Specification:
 4. Employee table: name, id, Role, Branch, Job_queue, is_active.
 5. Jobs table: id, client, assigned_to, state, mode (air, land, sea), direction (import/export), branch.
 """
+import os
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -137,6 +138,10 @@ class Decision:
 
 class AccessEngine:
     def __init__(self, path=':memory:', clock=None):
+        if path != ':memory:':
+            parent_dir = os.path.dirname(path)
+            if parent_dir:
+                os.makedirs(parent_dir, exist_ok=True)
         self.con = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self.con.row_factory = sqlite3.Row
         self.con.execute('PRAGMA journal_mode=WAL')

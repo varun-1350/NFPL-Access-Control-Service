@@ -162,6 +162,9 @@ python test_access.py
 
 ```
 nfpl_access_control_simplified/
+├── data/
+│   ├── nfpl_demo.db           # Seeded SQLite Database (Tracked in Git)
+│   └── nfpl_scale.db          # 200k Records Scale Benchmark Database (Tracked in Git)
 ├── app.py                     # Standalone Desktop GUI Application (CustomTkinter)
 ├── engine.py                  # Core Security Decision Engine & SQLite Schema (ABAC/RBAC)
 ├── server.py                  # Flask REST API Web Server & Controller

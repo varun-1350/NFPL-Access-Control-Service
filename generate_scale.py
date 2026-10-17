@@ -1,11 +1,12 @@
-"""Generates scale benchmark dataset (500 users, 200,000 jobs) for Nagarkot Access Control."""
+import os
 import random
 import time
 from engine import AccessEngine, BRANCHES, MODES, DIRECTIONS, STANDARD_STAGES, SCHEMA
 
+DEFAULT_SCALE_DB = os.path.join("data", "nfpl_scale.db")
 CLIENTS = [f"Client_{i:02d}" for i in range(1, 11)]
 
-def generate_scale(db_path="nfpl_scale.db"):
+def generate_scale(db_path=DEFAULT_SCALE_DB):
     print(f"Generating scale dataset at '{db_path}' (500 users, 200,000 jobs)...")
     t0 = time.time()
     engine = AccessEngine(db_path)

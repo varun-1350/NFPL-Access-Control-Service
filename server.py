@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from engine import AccessEngine, Denied, Refused, NotFound
 
 app = Flask(__name__, static_folder="static", static_url_path="")
-DB_PATH = "nfpl_demo.db"
+DB_PATH = os.path.join("data", "nfpl_demo.db")
 
 # Auto-seed database if missing (for zero-config cloud deployments)
 if not os.path.exists(DB_PATH):

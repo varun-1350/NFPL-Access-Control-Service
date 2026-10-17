@@ -6,7 +6,10 @@ Schema:
 3. Employee table: name, id, Role, Branch, Job_queue, is_active
 4. Jobs table: id, client, assigned_to, state, mode (air, land, sea), direction (import/export), branch
 """
+import os
 from engine import AccessEngine
+
+DEFAULT_DB_PATH = os.path.join("data", "nfpl_demo.db")
 
 BRANCHES = [
     ('b1', 'Branch 1 - Mumbai'),
@@ -19,7 +22,7 @@ BRANCHES = [
 CLIENTS = ['ACME Corp', 'Globex International', 'Initech Logistics', 'Umbrella Corp', 'Stark Freight']
 
 
-def seed_demo(db_path="nfpl_demo.db"):
+def seed_demo(db_path=DEFAULT_DB_PATH):
     engine = AccessEngine(db_path)
     con = engine.con
 
