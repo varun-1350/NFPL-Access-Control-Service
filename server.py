@@ -252,6 +252,34 @@ def execute_action():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/compare", methods=["GET", "POST"])
+def compare_access():
+    """Compare why Person A can perform an action and Person B cannot."""
+    if request.method == "POST":
+        data = request.json or {}
+        user_a = data.get("user_a")
+        user_b = data.get("user_b")
+        job_id = int(data.get("job_id", 1))
+        action = data.get("action", "check")
+    else:
+        user_a = request.args.get("user_a")
+        user_b = request.args.get("user_b")
+        job_id = int(request.args.get("job_id", 1))
+        action = request.args.get("action", "check")
+
+    if not user_a or not user_b:
+        return jsonify({"error": "Both 'user_a' and 'user_b' parameters are required."}), 400
+
+    try:
+        res = engine.compare(user_a, user_b, job_id, action)
+        return jsonify(res)
+    except NotFound as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 @app.route("/api/assign", methods=["POST"])
 def assign_job():
     """Assign job strictly to branch staff."""

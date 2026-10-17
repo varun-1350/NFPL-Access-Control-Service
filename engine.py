@@ -75,6 +75,11 @@ CREATE TABLE IF NOT EXISTS audit (
     verification_notes TEXT,
     verification_status TEXT DEFAULT 'pending'
 );
+
+CREATE INDEX IF NOT EXISTS idx_jobs_branch_state ON jobs(branch, state);
+CREATE INDEX IF NOT EXISTS idx_jobs_assigned ON jobs(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_job_events_job ON job_events(job_id);
+CREATE INDEX IF NOT EXISTS idx_audit_actor_ts ON audit(actor, ts);
 """
 
 
@@ -447,3 +452,72 @@ class AccessEngine:
                 (self.now(), actor_id, 'manage_access', f"employee:{emp_id}", f"Updated role to {new_role}")
             )
             return dict(employee_id=emp_id, role=new_role, branch=new_branch)
+
+    def compare(self, user_a_id, user_b_id, job_id, action):
+        """Compare two users to explain why Person A can do an action and Person B cannot."""
+        job = self._job(job_id)
+        emp_a = self._employee(user_a_id)
+        emp_b = self._employee(user_b_id)
+
+        dec_a = self.decide(user_a_id, action, job)
+        dec_b = self.decide(user_b_id, action, job)
+
+        checks_a = {c['check']: c for c in dec_a.checks}
+        checks_b = {c['check']: c for c in dec_b.checks}
+        all_checks = list(dict.fromkeys(list(checks_a.keys()) + list(checks_b.keys())))
+
+        differences = []
+        for chk in all_checks:
+            ca = checks_a.get(chk)
+            cb = checks_b.get(chk)
+            ca_ok = ca['ok'] if ca else False
+            cb_ok = cb['ok'] if cb else False
+            if ca_ok != cb_ok:
+                winner = user_a_id if ca_ok else user_b_id
+                loser = user_b_id if ca_ok else user_a_id
+                reason_w = ca['detail'] if ca_ok else (cb['detail'] if cb else '')
+                reason_l = cb['detail'] if not cb_ok and cb else (ca['detail'] if ca else '')
+                differences.append({
+                    "check": chk,
+                    "winner": winner,
+                    "loser": loser,
+                    "user_a_status": ca_ok,
+                    "user_b_status": cb_ok,
+                    "summary": f"{chk}: Passed for {winner} ({reason_w}), but failed for {loser} ({reason_l})"
+                })
+
+        if dec_a.allowed and not dec_b.allowed:
+            summary = f"{emp_a['name']} ({user_a_id}) is ALLOWED, while {emp_b['name']} ({user_b_id}) is DENIED because: {dec_b.summary()}."
+        elif not dec_a.allowed and dec_b.allowed:
+            summary = f"{emp_b['name']} ({user_b_id}) is ALLOWED, while {emp_a['name']} ({user_a_id}) is DENIED because: {dec_a.summary()}."
+        elif dec_a.allowed and dec_b.allowed:
+            summary = f"Both {emp_a['name']} and {emp_b['name']} are ALLOWED to perform '{action}' on job #{job_id}."
+        else:
+            summary = f"Both users are DENIED. {user_a_id}: {dec_a.summary()}; {user_b_id}: {dec_b.summary()}."
+
+        return {
+            "job": job,
+            "action": action,
+            "user_a": {
+                "id": user_a_id,
+                "name": emp_a['name'],
+                "role": emp_a['role'],
+                "branch": emp_a['branch'],
+                "is_active": bool(emp_a['is_active']),
+                "allowed": dec_a.allowed,
+                "summary": dec_a.summary(),
+                "checks": dec_a.checks
+            },
+            "user_b": {
+                "id": user_b_id,
+                "name": emp_b['name'],
+                "role": emp_b['role'],
+                "branch": emp_b['branch'],
+                "is_active": bool(emp_b['is_active']),
+                "allowed": dec_b.allowed,
+                "summary": dec_b.summary(),
+                "checks": dec_b.checks
+            },
+            "differences": differences,
+            "summary": summary
+        }

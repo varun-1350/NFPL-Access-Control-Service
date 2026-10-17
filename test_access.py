@@ -148,6 +148,78 @@ class TestAccessEngine(unittest.TestCase):
         res_reopen = self.engine.act("admin1", 4, "reopen", reason="Admin reopened shipment")
         self.assertEqual(res_reopen['state'], 'Reopened')
 
+    def test_admin_self_escalation_blocked(self):
+        """Staff cannot escalate themselves or others to Admin; unauthorized access changes fail."""
+        # Staff attempting to grant themselves Admin privileges is rejected
+        with self.assertRaises(Refused) as cm:
+            self.engine.update_employee_role("u_staff_1", "u_staff_1", "Admin")
+        self.assertEqual(cm.exception.code, "unauthorized")
+
+        # Staff attempting to promote a peer is rejected
+        with self.assertRaises(Refused) as cm:
+            self.engine.update_employee_role("u_staff_2", "u_staff_1", "Admin")
+        self.assertEqual(cm.exception.code, "unauthorized")
+
+        # Admin attempting to assign an invalid/nonexistent role is rejected
+        with self.assertRaises(Refused) as cm:
+            self.engine.update_employee_role("admin1", "u_staff_1", "SuperUserGodMode")
+        self.assertEqual(cm.exception.code, "unknown_role")
+
+    def test_mid_job_responsibility_change(self):
+        """When responsibilities change mid-job, new access rules apply live immediately."""
+        con = self.engine.con
+        con.execute("INSERT INTO jobs(id, client, assigned_to, state, mode, direction, branch) VALUES(8, 'Omega Corp', NULL, 'Confirmed', 'air', 'import', 'b1')")
+
+        # u_staff_1 starts the job in b1
+        self.engine.act("u_staff_1", 8, "prepare", reason="Initial preparation")
+        self.assertEqual(self.engine._job(8)['state'], 'Prepared')
+
+        # Admin transfers u_staff_2 from b1 to b2 (responsibility change mid-job)
+        self.engine.update_employee_role("admin1", "u_staff_2", "staff", "b2")
+
+        # u_staff_2 can no longer check this job because their branch is now b2
+        d = self.engine.decide("u_staff_2", "check", self.engine._job(8))
+        self.assertFalse(d.allowed)
+        self.assertEqual(d.code, "branch_scope")
+
+        # However, event history still accurately records that u_staff_1 prepared it
+        events = con.execute("SELECT * FROM job_events WHERE job_id=8").fetchall()
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]['actor'], 'u_staff_1')
+
+    def test_parser_service_account(self):
+        """Overnight parser is treated as an automated service account: creates/prepares, cannot check own work."""
+        con = self.engine.con
+        con.execute("INSERT INTO employees(name, id, role, branch, job_queue, is_active) VALUES('EDI Parser', 'u_parser', 'staff', 'b1', '', 1)")
+        con.execute("INSERT INTO jobs(id, client, assigned_to, state, mode, direction, branch) VALUES(9, 'AutoClient', NULL, 'Confirmed', 'sea', 'import', 'b1')")
+
+        # Parser prepares batch shipment
+        res = self.engine.act("u_parser", 9, "prepare", reason="Automated overnight batch ingest")
+        self.assertEqual(res['state'], 'Prepared')
+
+        # Parser CANNOT check its own work (Maker-Checker SoD applies to automated parser as well)
+        d = self.engine.decide("u_parser", "check", self.engine._job(9))
+        self.assertFalse(d.allowed)
+        self.assertEqual(d.code, "maker_checker")
+
+        # Human staff member in b1 can check the parser's work
+        res_check = self.engine.act("u_staff_1", 9, "check", reason="Human verified parser output")
+        self.assertEqual(res_check['state'], 'Checked')
+
+    def test_compare_explains_why_she_can_and_he_cannot(self):
+        """Compare API accurately answers 'Why can she do this and he cannot?'."""
+        con = self.engine.con
+        con.execute("INSERT INTO jobs(id, client, assigned_to, state, mode, direction, branch, prepared_by) VALUES(10, 'CompareClient', NULL, 'Prepared', 'air', 'import', 'b1', 'u_staff_1')")
+
+        # u_staff_1 prepared job 10. Priya (u_staff_1) cannot check; Rahul (u_staff_2) can check.
+        cmp_result = self.engine.compare("u_staff_2", "u_staff_1", 10, "check")
+
+        self.assertTrue(cmp_result['user_a']['allowed'])
+        self.assertFalse(cmp_result['user_b']['allowed'])
+        self.assertIn("Priya Sharma", cmp_result['summary'])
+        self.assertIn("Rahul Verma", cmp_result['summary'])
+        self.assertTrue(any(diff['check'] == 'maker_checker' for diff in cmp_result['differences']))
+
 
 if __name__ == "__main__":
     unittest.main()

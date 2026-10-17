@@ -1262,3 +1262,120 @@ async function submitRoleUpdate() {
         showToast("Error updating access: " + err, "error");
     }
 }
+
+let cachedUsersList = [];
+
+async function openCompareModal() {
+    try {
+        if (!cachedUsersList || cachedUsersList.length === 0) {
+            const res = await fetch("/api/users");
+            cachedUsersList = await res.json();
+        }
+
+        const selA = document.getElementById("compare-user-a");
+        const selB = document.getElementById("compare-user-b");
+
+        selA.innerHTML = cachedUsersList.map(u => 
+            `<option value="${u.id}">${u.name} (${u.id} - ${u.role}/${u.branch})</option>`
+        ).join("");
+
+        selB.innerHTML = cachedUsersList.map(u => 
+            `<option value="${u.id}">${u.name} (${u.id} - ${u.role}/${u.branch})</option>`
+        ).join("");
+
+        // Defaults to classic Maker-Checker SoD demonstration on Job 1
+        selA.value = "u_staff_2"; // Rahul
+        selB.value = "u_staff_1"; // Priya (Prepared Job 1)
+        document.getElementById("compare-action").value = "check";
+        document.getElementById("compare-job-id").value = "1";
+
+        openModal("modal-compare");
+        runComparison();
+    } catch (err) {
+        showToast("Failed to initialize comparison tool: " + err, "error");
+    }
+}
+
+async function runComparison() {
+    const userA = document.getElementById("compare-user-a").value;
+    const userB = document.getElementById("compare-user-b").value;
+    const action = document.getElementById("compare-action").value;
+    const jobId = document.getElementById("compare-job-id").value || 1;
+
+    const resultBox = document.getElementById("compare-result-container");
+    const banner = document.getElementById("compare-verdict-banner");
+    const colA = document.getElementById("compare-col-a");
+    const colB = document.getElementById("compare-col-b");
+    const diffSec = document.getElementById("compare-diff-section");
+
+    try {
+        const res = await fetch(`/api/compare?user_a=${userA}&user_b=${userB}&job_id=${jobId}&action=${action}`);
+        const data = await res.json();
+
+        if (data.error) {
+            showToast(data.error, "error");
+            return;
+        }
+
+        resultBox.style.display = "block";
+
+        // Verdict banner
+        const isOneAllowed = (data.user_a.allowed !== data.user_b.allowed);
+        banner.style.background = isOneAllowed ? "rgba(14, 165, 233, 0.15)" : "rgba(30, 41, 59, 0.7)";
+        banner.style.color = isOneAllowed ? "#38BDF8" : "#E2E8F0";
+        banner.innerHTML = `📌 <strong>Core Decision Verdict:</strong> ${data.summary}`;
+
+        function renderUserCard(u) {
+            const statusBadge = u.allowed
+                ? `<span style="background: rgba(16, 185, 129, 0.2); color: #34D399; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.8rem;">✓ ALLOWED</span>`
+                : `<span style="background: rgba(239, 68, 68, 0.2); color: #F87171; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.8rem;">✕ DENIED</span>`;
+
+            const checksList = u.checks.map(c => `
+                <li style="display: flex; gap: 8px; margin-bottom: 6px; font-size: 0.85rem; color: ${c.ok ? '#94A3B8' : '#FCA5A5'};">
+                    <span>${c.ok ? '✓' : '✗'}</span>
+                    <strong>${c.check}:</strong>
+                    <span>${c.detail}</span>
+                </li>
+            `).join("");
+
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 1.05rem; font-weight: 600;">${u.name}</h4>
+                        <span style="font-size: 0.8rem; color: #94A3B8;">${u.id} | ${u.role} | Branch: ${u.branch} | Duty: ${u.is_active ? 'Active' : 'On Leave'}</span>
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.5rem;">
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        ${checksList}
+                    </ul>
+                </div>
+            `;
+        }
+
+        colA.innerHTML = renderUserCard(data.user_a);
+        colB.innerHTML = renderUserCard(data.user_b);
+
+        // Differences Breakdown
+        if (data.differences && data.differences.length > 0) {
+            diffSec.innerHTML = `
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 1rem;">
+                    <h5 style="margin: 0 0 0.5rem 0; color: #FBBF24; font-size: 0.95rem;">⚡ Key Decision Differentiators:</h5>
+                    <ul style="margin: 0; padding-left: 1.25rem; color: #E2E8F0; font-size: 0.88rem;">
+                        ${data.differences.map(d => `<li style="margin-bottom: 4px;">${d.summary}</li>`).join("")}
+                    </ul>
+                </div>
+            `;
+        } else {
+            diffSec.innerHTML = `
+                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.75rem; text-align: center; color: #94A3B8; font-size: 0.85rem;">
+                    Identical permission outcome: both evaluated to ${data.user_a.allowed ? 'ALLOWED' : 'DENIED'} across all security checks.
+                </div>
+            `;
+        }
+    } catch (err) {
+        showToast("Comparison failed: " + err, "error");
+    }
+}
+

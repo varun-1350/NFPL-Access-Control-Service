@@ -33,19 +33,47 @@ def seed_demo(db_path="nfpl_demo.db"):
         # 1. Insert Branches: b1, b2, b3, b4, b5
         con.executemany("INSERT INTO branches VALUES(?,?)", BRANCHES)
 
-        # 2. Insert Employees: name, id, Role, Branch, Job_queue, is_active
+        # 2. Insert Employees: 20 deliberate personas across branches b1-b5
         employees = [
+            # Admins (Global Scope)
             ('Carol Admin', 'admin1', 'Admin', 'all', '', 1),
-            ('Alice Assigner', 'u_job_assigner', 'Job_assigner', 'b1', '', 1),
-            ('Bob Auditor', 'u_auditor', 'auditor', 'b1', '', 1),
+            ('David Systems Admin', 'admin2', 'Admin', 'all', '', 1),
+            
+            # Job Assigners (Cross-branch coordination)
+            ('Alice Assigner', 'u_job_assigner_b1', 'Job_assigner', 'b1', '', 1),
+            ('Deepak Assigner', 'u_job_assigner_b2', 'Job_assigner', 'b2', '', 1),
+
+            # Compliance Auditors
+            ('Bob Auditor', 'u_auditor_1', 'auditor', 'b1', '', 1),
+            ('Meera Auditor', 'u_auditor_2', 'auditor', 'b2', '', 1),
+
+            # Branch 1 Staff (Mumbai)
             ('Priya Sharma', 'u_staff_1', 'staff', 'b1', '', 1),
             ('Rahul Verma', 'u_staff_2', 'staff', 'b1', '', 1),
+            ('Frank Absent', 'u_absent', 'staff', 'b1', '', 0), # Absent on leave (soft locks dissolved)
+
+            # Branch 2 Staff (Delhi)
             ('Amit Patel', 'u_staff_3', 'staff', 'b2', '', 1),
             ('Sneha Rao', 'u_staff_4', 'staff', 'b2', '', 1),
+
+            # Branch 3 Staff (Bengaluru)
             ('Vikram Nair', 'u_staff_5', 'staff', 'b3', '', 1),
-            ('Ananya Das', 'u_staff_6', 'staff', 'b4', '', 1),
-            ('Karan Singh', 'u_staff_7', 'staff', 'b5', '', 1),
-            ('Frank Absent', 'u_absent', 'staff', 'b1', '', 0) # Absent (on leave, is_active=0)
+            ('Ritu Menon', 'u_staff_6', 'staff', 'b3', '', 1),
+
+            # Branch 4 Staff (Chennai)
+            ('Ananya Das', 'u_staff_7', 'staff', 'b4', '', 1),
+            ('Suresh Raman', 'u_staff_8', 'staff', 'b4', '', 1),
+
+            # Branch 5 Staff (Kolkata)
+            ('Karan Singh', 'u_staff_9', 'staff', 'b5', '', 1),
+            ('Pooja Banerjee', 'u_staff_10', 'staff', 'b5', '', 1),
+            ('Manoj Sen', 'u_staff_11', 'staff', 'b5', '', 0), # Absent on leave
+
+            # Trainee / Junior Staff
+            ('Tarun Junior', 'u_staff_junior', 'staff', 'b1', '', 1),
+
+            # Automated Overnight Batch Parser (System Service Account)
+            ('Overnight EDI Parser', 'u_parser', 'staff', 'b1', '', 1)
         ]
         con.executemany("INSERT INTO employees(name, id, role, branch, job_queue, is_active) VALUES(?,?,?,?,?,?)", employees)
 
@@ -127,14 +155,15 @@ def seed_demo(db_path="nfpl_demo.db"):
 
     # Sync initial employee queues
     with engine.tx():
-        for emp in ('admin1', 'u_job_assigner', 'u_auditor', 'u_staff_1', 'u_staff_2', 'u_staff_3', 'u_staff_4', 'u_absent'):
+        all_emps = [r['id'] for r in con.execute("SELECT id FROM employees").fetchall()]
+        for emp in all_emps:
             engine._sync_employee_queue(emp)
 
     print(f"Successfully seeded '{db_path}' with remade schema:")
     print(" - Branches: b1, b2, b3, b4, b5")
     print(" - Roles: Admin, Job_assigner, auditor, staff")
     print(" - Modes: air, land, sea")
-    print(" - 11 Employees and 104 Jobs initialized.")
+    print(f" - {len(all_emps)} Employees and 104 Jobs initialized.")
 
 
 if __name__ == "__main__":
