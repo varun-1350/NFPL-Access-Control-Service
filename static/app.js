@@ -107,28 +107,80 @@ function handleLogout() {
 }
 
 // Update Top App Banner
+// Update Top App Header
 function updateBanner() {
     if (!currentUser) return;
-    document.getElementById("banner-user-name").textContent = `${currentUser.name} (${currentUser.id})`;
+
+    // Header Display
+    const nameEl = document.getElementById("banner-user-name");
+    if (nameEl) nameEl.textContent = currentUser.name;
+
+    const initials = currentUser.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "US";
+    const avatarEl = document.getElementById("header-avatar-initials");
+    if (avatarEl) avatarEl.textContent = initials;
 
     const roleBadge = document.getElementById("banner-user-role");
-    roleBadge.textContent = currentUser.role;
-    roleBadge.style.background = ""; // clear any inline background
-    roleBadge.className = `meta-badge badge-role badge-role-${currentUser.role.toLowerCase()}`;
+    if (roleBadge) {
+        roleBadge.textContent = currentUser.role;
+        roleBadge.className = `badge-role-tag badge-role-${currentUser.role.toLowerCase()}`;
+    }
 
-    document.getElementById("banner-user-branch").textContent = currentUser.branch === "all" ? "all (Global)" : currentUser.branch;
+    const branchEl = document.getElementById("banner-user-branch");
+    if (branchEl) {
+        branchEl.textContent = currentUser.branch === "all" ? "All Branches (Global)" : `Branch ${currentUser.branch.toUpperCase()}`;
+    }
 
     const statusBadge = document.getElementById("banner-user-status");
     const statusText = document.getElementById("banner-status-text");
 
     if (currentUser.is_active) {
-        statusBadge.className = "status-indicator";
-        statusText.textContent = "Active";
+        if (statusBadge) statusBadge.className = "status-indicator-compact";
+        if (statusText) statusText.textContent = "Active";
     } else {
-        statusBadge.className = "status-indicator status-absent";
-        statusText.textContent = "On Leave";
+        if (statusBadge) statusBadge.className = "status-indicator-compact status-absent";
+        if (statusText) statusText.textContent = "On Leave";
+    }
+
+    // Popover Profile Display
+    const popAvatar = document.getElementById("popover-avatar");
+    if (popAvatar) popAvatar.textContent = initials;
+    const popName = document.getElementById("popover-user-name");
+    if (popName) popName.textContent = currentUser.name;
+    const popId = document.getElementById("popover-user-id");
+    if (popId) popId.textContent = `ID: ${currentUser.id}`;
+    const popRoleBadge = document.getElementById("popover-user-role-badge");
+    if (popRoleBadge) {
+        popRoleBadge.textContent = currentUser.role;
+        popRoleBadge.className = `badge-role-tag badge-role-${currentUser.role.toLowerCase()}`;
+    }
+    const popLeaveText = document.getElementById("popover-leave-text");
+    if (popLeaveText) {
+        popLeaveText.textContent = currentUser.is_active ? "🏖️ Apply for Absent Leave" : "🟢 Return to Active Duty";
     }
 }
+
+// SaaS Avatar Profile Popover Handling
+function toggleProfileDropdown(e) {
+    if (e) e.stopPropagation();
+    const popover = document.getElementById("profile-popover");
+    if (popover) {
+        popover.classList.toggle("active");
+    }
+}
+
+function closeProfileDropdown() {
+    const popover = document.getElementById("profile-popover");
+    if (popover) {
+        popover.classList.remove("active");
+    }
+}
+
+document.addEventListener("click", (e) => {
+    const container = document.getElementById("profile-dropdown-container");
+    if (container && !container.contains(e.target)) {
+        closeProfileDropdown();
+    }
+});
 
 // Render Action Panel controls tailored strictly to the 4 roles
 function renderRoleControls(role) {
@@ -137,85 +189,51 @@ function renderRoleControls(role) {
 
     document.getElementById("action-panel-role-scope").textContent = `Privilege Scope: ${role}`;
 
-    // -------------------------------------------------------------
-    // ROLE 1: Admin
-    // Cases: Can access Jobs, Employee Database, Audit Log (+ cancel/reopen, manage access)
-    // -------------------------------------------------------------
+    let actions = [];
     if (role === "Admin") {
-        container.innerHTML = `
-            <div class="section-label text-rose">Admin Controls</div>
-            <button class="btn btn-primary btn-block" onclick="openJobsModal()">
-                <span>📦 Access Jobs Dataset</span>
-            </button>
-            <button class="btn btn-primary btn-block" onclick="openEmployeesModal()">
-                <span>👥 Employee Database</span>
-            </button>
-            <button class="btn btn-danger btn-block" onclick="openAdminLifecycleModal()">
-                <span>⚙️ Cancel / Reopen Jobs (Admin Only)</span>
-            </button>
-            <button class="btn btn-success btn-block" onclick="openAuditModal()">
-                <span>🛡️ View System Audit Log</span>
-            </button>
-            <button class="btn btn-primary btn-block" onclick="openAccessModal()">
-                <span>🔑 Manage Staff Access</span>
-            </button>
-        `;
+        actions = [
+            { icon: "📦", label: "Access Jobs Dataset", desc: "Master shipment ledger across branches", fn: "openJobsModal()" },
+            { icon: "👥", label: "Employee Directory", desc: "Manage branch personnel & status", fn: "openEmployeesModal()" },
+            { icon: "🔑", label: "Manage Staff Access", desc: "Update employee roles & branches", fn: "openAccessModal()" },
+            { icon: "🛡️", label: "System Audit Log", desc: "Forensic decision history & verification", fn: "openAuditModal()" },
+            { icon: "⚙️", label: "Cancel / Reopen Jobs", desc: "Sensitive lifecycle override (Admin Only)", fn: "openAdminLifecycleModal()", sensitive: true }
+        ];
+    } else if (role === "staff") {
+        const leaveLabel = currentUser.is_active ? "Apply for Absent Leave" : "Return to Active Duty";
+        const leaveDesc = currentUser.is_active ? "Dissolves soft-locks for peers" : "Restore on-duty status";
+        actions = [
+            { icon: "⏩", label: "Advance Next Job", desc: "Progress earliest assigned shipment", fn: "advanceNextJob()" },
+            { icon: currentUser.is_active ? "🏖️" : "🟢", label: leaveLabel, desc: leaveDesc, fn: "toggleLeave()" },
+            { icon: "📜", label: "Audit Log (Read-Only)", desc: "Inspect recorded transitions", fn: "openAuditModal()" }
+        ];
+    } else if (role === "Job_assigner") {
+        actions = [
+            { icon: "🎯", label: "Assign Job to Staff", desc: "Delegate shipment across branches", fn: "openAssignModal()" },
+            { icon: "📦", label: "Access Jobs Dataset", desc: "View unassigned branch backlog", fn: "openJobsModal()" },
+            { icon: "📜", label: "System Audit Log", desc: "Review assignment log history", fn: "openAuditModal()" }
+        ];
+    } else if (role === "auditor") {
+        actions = [
+            { icon: "🔄", label: "Refresh Audit Stream", desc: "Poll latest security events", fn: "loadQueue()" },
+            { icon: "🔍", label: "Advanced Audit Query Tool", desc: "Search & verify compliance records", fn: "openAuditModal()" },
+            { icon: "📦", label: "View Jobs (Read-Only)", desc: "Cross-reference shipments with audits", fn: "openJobsModal(true)" }
+        ];
     }
-    // -------------------------------------------------------------
-    // ROLE 2: staff
-    // Cases: Can access & change jobs queue assigned to them (by branch),
-    //        apply for absent leave, audit log (read-only)
-    // -------------------------------------------------------------
-    else if (role === "staff") {
-        const leaveBtnText = currentUser.is_active ? "🏖️ Apply for Absent Leave" : "🟢 Return to Duty (End Leave)";
-        const leaveBtnClass = currentUser.is_active ? "btn-warning" : "btn-success";
 
-        container.innerHTML = `
-            <div class="section-label text-sky">Staff Controls (Branch ${currentUser.branch})</div>
-            <button class="btn btn-success btn-block" onclick="advanceNextJob()">
-                <span>⏩ Advance Next Assigned Job</span>
-            </button>
-            <button class="btn ${leaveBtnClass} btn-block" onclick="toggleLeave()">
-                <span>${leaveBtnText}</span>
-            </button>
-            <button class="btn btn-secondary btn-block" onclick="openAuditModal()">
-                <span>📜 Audit Log (Read-Only)</span>
-            </button>
-        `;
-    }
-    // -------------------------------------------------------------
-    // ROLE 3: Job_assigner
-    // Cases: Can assign jobs to staff, access jobs dataset (cross-branch permitted)
-    // -------------------------------------------------------------
-    else if (role === "Job_assigner") {
-        container.innerHTML = `
-            <div class="section-label text-emerald">Branch Task Assigner (${currentUser.branch})</div>
-            <button class="btn btn-primary btn-block" onclick="openJobsModal()">
-                <span>📦 Access Jobs Dataset</span>
-            </button>
-            <button class="btn btn-success btn-block" onclick="openAssignModal()">
-                <span>🎯 Assign Job (Cross-Branch Permitted)</span>
-            </button>
-        `;
-    }
-    // -------------------------------------------------------------
-    // ROLE 4: auditor
-    // Cases: Access audit stream as primary UI, verify/flag/reject audits; jobs dataset read-only
-    // -------------------------------------------------------------
-    else if (role === "auditor") {
-        container.innerHTML = `
-            <div class="section-label text-amber">Forensic Auditor Controls</div>
-            <button class="btn btn-primary btn-block" onclick="openJobsModal(true)">
-                <span>📦 View Jobs Dataset (Read-Only)</span>
-            </button>
-            <button class="btn btn-warning btn-block" onclick="loadQueue()">
-                <span>🔄 Refresh Audit Stream</span>
-            </button>
-            <button class="btn btn-secondary btn-block" onclick="openAuditModal()">
-                <span>🔍 Advanced Audit Query Tool</span>
-            </button>
-        `;
-    }
+    container.innerHTML = `
+        <div class="action-nav-list">
+            ${actions.map(a => `
+                <button class="action-nav-card ${a.sensitive ? 'action-nav-sensitive' : ''}" onclick="${a.fn}">
+                    <span class="action-nav-icon">${a.icon}</span>
+                    <span class="action-nav-info">
+                        <span class="action-nav-title">${a.label}</span>
+                        <span class="action-nav-desc">${a.desc}</span>
+                    </span>
+                    <span class="action-nav-arrow">→</span>
+                </button>
+            `).join("")}
+        </div>
+    `;
 }
 
 // Load Task Queue & Shipment Box (or Auditor Compliance Stream)
@@ -349,36 +367,44 @@ function filterQueue() {
         const card = document.createElement("div");
         card.className = "task-card";
 
-        const stageClass = `badge-stage-${j.state.toLowerCase()}`;
+        const stageState = j.state.toLowerCase();
         const whyText = j.why_in_queue || (j.assigned_to ? `Assigned to ${j.assigned_to}` : "Unassigned in branch");
-        const routingClass = whyText.includes("directly to you") ? "routing-assigned" : (whyText.includes("Covering") ? "routing-dissolved" : "routing-unassigned");
+        const routingClass = whyText.includes("directly to you") ? "routing-tag-assigned" : (whyText.includes("Covering") ? "routing-tag-cover" : "routing-tag-unassigned");
 
         let actionBtnHtml = "";
         if (currentUser.role === "staff" && j.action) {
             const actName = j.action.charAt(0).toUpperCase() + j.action.slice(1);
-            const btnColor = j.action === "prepare" ? "btn-primary" : (j.action === "check" ? "btn-warning" : "btn-success");
-            actionBtnHtml = `<button class="btn ${btnColor} btn-sm" onclick="executeTaskAction('${j.action}', ${j.id})">Execute: ${actName}</button>`;
+            actionBtnHtml = `<button class="btn btn-primary btn-sm" onclick="executeTaskAction('${j.action}', ${j.id})">Execute: ${actName}</button>`;
         } else if (currentUser.role === "Job_assigner" && (j.state === "Confirmed" || j.state === "Prepared" || j.state === "Reopened")) {
-            actionBtnHtml = `<button class="btn btn-success btn-sm" onclick="openAssignModal(${j.id})">Assign to Staff</button>`;
+            actionBtnHtml = `<button class="btn btn-secondary btn-sm" onclick="openAssignModal(${j.id})">Assign to Staff</button>`;
         }
 
         card.innerHTML = `
             <div class="task-top">
                 <div class="task-title-group">
-                    <span class="badge-stage ${stageClass}">${j.state}</span>
+                    <span class="status-badge status-${stageState}">
+                        <span class="status-badge-dot"></span>
+                        ${j.state}
+                    </span>
                     <span class="task-id">Job #${j.id}</span>
-                    <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">[Client: ${j.client}]</span>
+                    <span class="task-client">${j.client}</span>
                 </div>
-                <span class="task-owner-badge">Assigned to: ${j.assigned_to || 'Unassigned'}</span>
+                <div class="task-assignee">
+                    <span class="assignee-label">Assignee:</span>
+                    <span class="assignee-value">${j.assigned_to || 'Unassigned'}</span>
+                </div>
             </div>
             <div class="task-meta-row">
-                <span>Branch: <strong>${j.branch}</strong></span>
-                <span>Mode: <strong style="text-transform: uppercase;">${j.mode}</strong></span>
-                <span>Direction: <strong style="text-transform: capitalize;">${j.direction}</strong></span>
-                <span>Prepared By: <strong>${j.prepared_by || 'None'}</strong></span>
+                <span class="meta-field"><span class="meta-field-name">Branch:</span> <span class="meta-field-val">${j.branch.toUpperCase()}</span></span>
+                <span class="meta-divider">·</span>
+                <span class="meta-field"><span class="meta-field-name">Mode:</span> <span class="meta-field-val">${j.mode.toUpperCase()}</span></span>
+                <span class="meta-divider">·</span>
+                <span class="meta-field"><span class="meta-field-name">Direction:</span> <span class="meta-field-val">${j.direction.charAt(0).toUpperCase() + j.direction.slice(1)}</span></span>
+                <span class="meta-divider">·</span>
+                <span class="meta-field"><span class="meta-field-name">Prepared By:</span> <span class="meta-field-val">${j.prepared_by || '—'}</span></span>
             </div>
             <div class="task-bottom">
-                <span class="routing-reason ${routingClass}">📌 ${whyText}</span>
+                <span class="routing-tag ${routingClass}">${whyText}</span>
                 ${actionBtnHtml}
             </div>
         `;
@@ -1126,9 +1152,9 @@ function filterAuditorStream() {
                 <div class="meta-pill"><strong>Op:</strong>&nbsp;<code>${a.op}</code></div>
                 <div class="meta-pill"><strong>Target:</strong>&nbsp;<code>${a.target}</code></div>
             </div>
-            <div class="task-footer" style="margin-top: 0.5rem; font-size: 0.85rem; color: #E2E8F0;">
+            <div class="task-footer" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
                 <span><strong>Detail:</strong> ${a.detail}</span>
-                ${a.verified_by ? `<span style="color: var(--sky); font-weight: 600;">[Reviewed by ${a.verified_by}: ${a.verification_notes || ''}]</span>` : ''}
+                ${a.verified_by ? `<span style="color: var(--primary); font-weight: 600;">[Reviewed by ${a.verified_by}: ${a.verification_notes || ''}]</span>` : ''}
             </div>
         `;
         container.appendChild(card);
