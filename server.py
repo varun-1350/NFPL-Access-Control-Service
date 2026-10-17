@@ -6,11 +6,18 @@ Provides REST API with filtering, sorting, and search for:
 - Job Queue: filter by state, mode, search, sort.
 - Audit Log: filter by allowed (ALLOWED/DENIED), verification status, actor search, sort by timestamp.
 """
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from engine import AccessEngine, Denied, Refused, NotFound
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 DB_PATH = "nfpl_demo.db"
+
+# Auto-seed database if missing (for zero-config cloud deployments)
+if not os.path.exists(DB_PATH):
+    from seed_demo import seed_demo
+    seed_demo(DB_PATH)
+
 engine = AccessEngine(DB_PATH)
 
 
@@ -388,8 +395,9 @@ def update_role():
 
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     print("\n=======================================================")
-    print(" Nagarkot Access Control Web App running at:")
-    print(" http://localhost:5000")
+    print(f" Nagarkot Access Control Web App running on port {port}")
+    print(f" http://localhost:{port}")
     print("=======================================================\n")
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
